@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!--
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    -->
+    <link rel="stylesheet" href="./style.css" />
+    <title>Pong !</title>
+  </head>
+  <body>
+    <h1>Template Pong</h1>
+    <div id="setup">
+      <button id="hostButton">Host Game</button>
+      <button id="clientButton">Join Game</button>
+      <input type="text" id="ipInput" placeholder="Enter remote IP" />
+      <div id="networkStatus"></div>
+    </div>
+    <canvas
+      id="pongcanvas"
+      width="600"
+      height="400"
+      class="pongcontainer"
+    ></canvas>
+
+    <p>Joueur de gauche : Z et S</p>
+    <p>Joueur de droite : &uarr; et &darr;</p>
+
+    <script type="module">
+      import { Pong } from "./src/pong.js";
+
+      const canvas = document.getElementById("pongcanvas");
+      const statusDiv = document.getElementById("networkStatus");
+      const hostButton = document.getElementById("hostButton");
+      const clientButton = document.getElementById("clientButton");
+      const PORT = 12345;
+
+      function startHost() {
+        const remoteIP = document.getElementById("ipInput").value;
+        statusDiv.textContent = `Hosting game, waiting for a player to connect...`;
+
+        console.log("Hosting game on port", PORT);
+        new Pong(canvas, true, remoteIP); // Game starts only when both players are connected
+      }
+
+      function startClient() {
+        const remoteIP = document.getElementById("ipInput").value;
+        statusDiv.textContent = `Connecting to host at ${remoteIP}...`;
+        new Pong(canvas, false, remoteIP); // Client sends join request
+      }
+
+      // Attach functions to buttons
+      hostButton.addEventListener("click", startHost);
+      clientButton.addEventListener("click", startClient);
+    </script>
+  </body>
+</html>
