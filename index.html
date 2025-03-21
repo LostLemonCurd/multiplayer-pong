@@ -34,20 +34,20 @@
       const statusDiv = document.getElementById("networkStatus");
       const hostButton = document.getElementById("hostButton");
       const clientButton = document.getElementById("clientButton");
-      const PORT = 12345;
+      const HOST_PORT = 12345;
+      const CLIENT_PORT = 12345;
 
       function startHost() {
         const remoteIP = document.getElementById("ipInput").value;
         statusDiv.textContent = `Hosting game, waiting for a player to connect...`;
 
-        console.log("Hosting game on port", PORT);
-        new Pong(canvas, true, remoteIP); // Game starts only when both players are connected
+        new Pong(canvas, true, remoteIP, HOST_PORT, CLIENT_PORT);
       }
 
       function startClient() {
         const remoteIP = document.getElementById("ipInput").value;
         statusDiv.textContent = `Connecting to host at ${remoteIP}...`;
-        new Pong(canvas, false, remoteIP); // Client sends join request
+        new Pong(canvas, false, remoteIP, CLIENT_PORT, HOST_PORT);
       }
 
       // Attach functions to buttons

@@ -2,11 +2,18 @@ import { Paddle } from "./paddle.js";
 import { Ball } from "./ball.js";
 import { Text } from "./text.js";
 
-export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
+export function Pong(
+  canvas,
+  isHost,
+  remoteIP,
+  localPort = 12345,
+  remotePort = 12345
+) {
   console.log("Welcome to PONG!", {
     isHost,
     remoteIP,
-    PORT,
+    localPort,
+    remotePort,
   });
   let network = null;
   let ball = undefined;
@@ -38,13 +45,18 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
   let roundEnded = false;
 
   function initNetwork() {
-    network = window.gameNetwork.createNetworking(isHost, remoteIP, PORT, PORT);
-
+    network = window.gameNetwork.createNetworking(
+      isHost,
+      remoteIP,
+      localPort,
+      remotePort
+    );
     network.onReceive((data) => {
-      console.log("Received data:", data);
+      // console.log('data.gameEnd', data.gameEnd);
+      // console.log('gameStarted', gameStarted);
+      // console.log('roundEnded', roundEnded);
 
       if (data.type === "join_request") {
-        console.log("Client connected!");
         playersConnected++;
         network.send({ type: "join_ack" });
         if (playersConnected === 1) {
@@ -55,9 +67,16 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
         playersConnected++;
         // Initialize ball for client before game starts
         if (!isHost) {
+          bothPlayersReady = true;
           createBall();
+          network.send({ type: "client_ready" });
         }
+
         startGame();
+      } else if (data.type === "client_ready" && isHost) {
+        console.log("Client is ready!");
+        bothPlayersReady = true;
+        onBothPlayersReady(); // Créer la balle seulement à ce moment
       } else if (!gameStarted) {
         return; // Ignore game updates until properly started
       } else if (isHost) {
@@ -145,16 +164,26 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
     ball.position = [canvas.width / 2.0, canvas.height / 2.0];
   }
 
+  let bothPlayersReady = false;
+
+  // Dans pong.js, modifier la fonction startGame:
   function startGame() {
+    console.log("playersConnected", playersConnected);
+
     if (gameStarted) return; // Prevent multiple starts
     console.log("Starting the game!");
     gameStarted = true;
 
-    if (isHost) {
-      createBall();
-    }
-
+    // Ne pas créer la balle immédiatement
     requestAnimationFrame(loop);
+  }
+
+  // Ajouter un déclenchement séparé pour la création de balle
+  function onBothPlayersReady() {
+    if (!isHost || ball) return; // Seulement l'hôte et une seule fois
+
+    console.log("Both players ready, creating ball!");
+    createBall();
   }
 
   function endGame() {
@@ -181,7 +210,8 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
 
     if (isHost) {
       paddleLeft.update(delta);
-      if (ball) {
+      // Ne mettre à jour la balle que si les deux joueurs sont prêts
+      if (ball && bothPlayersReady) {
         ball.update(delta);
       }
     } else {
