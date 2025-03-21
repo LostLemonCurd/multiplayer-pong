@@ -34,7 +34,7 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
   paddleRight.position[0] = 580;
 
   let playersConnected = 0; // Track connections
-  let gameStarted;
+  let gameStarted = false;
 
   function initNetwork() {
     network = window.gameNetwork.createNetworking(isHost, remoteIP, PORT, PORT);
