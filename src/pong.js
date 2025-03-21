@@ -62,12 +62,25 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
       } else if (isHost) {
         // Host receives right paddle position from client
         paddleRight.position[1] = data.paddleY;
+      } else if (!isHost && data.newRound && gameStarted) {
+        // Le client crée une nouvelle balle lors d'une nouvelle manche
+        text = undefined;
+        createBall();
       } else {
         // Client receives ball and left paddle positions from host
         if (data.ballPos && ball) {
           ball.position = data.ballPos;
         }
         paddleLeft.position[1] = data.paddleY;
+        // Client reçoit l'information de fin de jeu
+        if (data.gameEnd && gameStarted) {
+          ball = undefined;
+          text = new Text({
+            ctx,
+            text: "Gagnant: " + (data.winner === "left" ? "Gauche" : "Droit"),
+          });
+          text.position = [canvas.width / 2.0, canvas.height / 2.0];
+        }
       }
     });
 
@@ -108,13 +121,20 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
       leftPaddle: paddleLeft,
       rightPaddle: paddleRight,
       onEscape: (result) => {
-        if (ball) {
+        if (ball && gameStarted) {
           ball = undefined;
           text = new Text({
             ctx,
             text: "Gagnant: " + (result.winner === "left" ? "Gauche" : "Droit"),
           });
           text.position = [canvas.width / 2.0, canvas.height / 2.0];
+          // Si c'est l'hôte, il envoie l'information de fin de jeu au client
+          if (isHost && network) {
+            network.send({
+              gameEnd: true,
+              winner: result.winner,
+            });
+          }
           endGame();
         }
       },
@@ -137,7 +157,13 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
   function endGame() {
     setTimeout(() => {
       text = undefined;
-      createBall();
+      if (isHost) {
+        createBall();
+        // Informer le client qu'une nouvelle manche commence
+        if (network && gameStarted) {
+          network.send({ newRound: true });
+        }
+      }
     }, 3000);
   }
 
