@@ -155,6 +155,8 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
   }
 
   function endGame() {
+    if (!gameStarted) return; // Ne pas terminer un jeu qui n'a pas commencé
+
     setTimeout(() => {
       text = undefined;
       if (isHost) {
