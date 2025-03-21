@@ -35,6 +35,7 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
 
   let playersConnected = 0; // Track connections
   let gameStarted = false;
+  let roundEnded = false;
 
   function initNetwork() {
     network = window.gameNetwork.createNetworking(isHost, remoteIP, PORT, PORT);
@@ -65,6 +66,7 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
       } else if (!isHost && data.newRound && gameStarted) {
         // Le client crée une nouvelle balle lors d'une nouvelle manche
         text = undefined;
+        roundEnded = false; // Réinitialiser l'état de fin de manche
         createBall();
       } else {
         // Client receives ball and left paddle positions from host
@@ -73,8 +75,9 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
         }
         paddleLeft.position[1] = data.paddleY;
         // Client reçoit l'information de fin de jeu
-        if (data.gameEnd && gameStarted) {
+        if (data.gameEnd && gameStarted && !roundEnded) {
           ball = undefined;
+          roundEnded = true; // Marquer la manche comme terminée côté client aussi
           text = new Text({
             ctx,
             text: "Gagnant: " + (data.winner === "left" ? "Gauche" : "Droit"),
@@ -121,7 +124,7 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
       leftPaddle: paddleLeft,
       rightPaddle: paddleRight,
       onEscape: (result) => {
-        if (ball && gameStarted) {
+        if (ball && gameStarted && !roundEnded) {
           ball = undefined;
           text = new Text({
             ctx,
@@ -159,6 +162,7 @@ export function Pong(canvas, isHost, remoteIP, PORT = 12345) {
 
     setTimeout(() => {
       text = undefined;
+      roundEnded = false;
       if (isHost) {
         createBall();
         // Informer le client qu'une nouvelle manche commence
